@@ -1,0 +1,38 @@
+# Source files
+src/
+*.test.ts
+*.spec.ts
+__tests__/
+
+# Development files
+.eslintrc.js
+.prettierrc
+.prettierignore
+jest.config.js
+tsconfig.json
+tsup.config.ts
+.lintstagedrc.js
+
+# Git hooks
+.husky/
+
+# Documentation (keep only essential docs)
+CLAUDE.md
+
+# Development dependencies
+coverage/
+.nyc_output
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# Cache directories
+.cache/
+node_modules/
