@@ -83,6 +83,18 @@ out
 dist
 coverage/
 
+# Native addon build files
+*.node
+*.o
+*.so
+*.dylib
+*.dll
+build/
+
+# Downloaded libconfsec files (generated during install)
+native/lib/
+native/include/
+
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js
