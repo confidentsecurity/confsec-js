@@ -1,38 +1,12 @@
 import * as path from 'path';
+import { ILibconfsec } from './types';
 
-// Interface for the native module
-interface LibconfsecNative {
-  confsecClientCreate(
-    apiKey: string,
-    concurrentRequestsTarget: number,
-    maxCandidateNodes: number,
-    defaultNodeTags: string[],
-    env?: string | null
-  ): number;
-  confsecClientDestroy(handle: number): void;
-  confsecClientGetDefaultCreditAmountPerRequest(handle: number): number;
-  confsecClientGetMaxCandidateNodes(handle: number): number;
-  confsecClientGetDefaultNodeTags(handle: number): string[];
-  confsecClientSetDefaultNodeTags(
-    handle: number,
-    defaultNodeTags: string[]
-  ): void;
-  confsecClientGetWalletStatus(handle: number): string;
-  confsecClientDoRequest(handle: number, request: string | Buffer): number;
-  confsecResponseDestroy(handle: number): void;
-  confsecResponseGetMetadata(handle: number): Buffer;
-  confsecResponseIsStreaming(handle: number): boolean;
-  confsecResponseGetBody(handle: number): Buffer;
-  confsecResponseGetStream(handle: number): number;
-  confsecResponseStreamGetNext(handle: number): Buffer | null;
-  confsecResponseStreamDestroy(handle: number): void;
+function getLibConfsec(): ILibconfsec {
+  //eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require(
+    path.join(__dirname, '../../build/Release/confsec.node')
+  ) as ILibconfsec;
 }
-
-// Try to load the built native module
-//eslint-disable-next-line @typescript-eslint/no-var-requires
-const native: LibconfsecNative = require(
-  path.join(__dirname, '../build/Release/confsec.node')
-) as LibconfsecNative;
 
 /**
  * Configuration options for creating a CONFSEC client
@@ -48,6 +22,8 @@ export interface ConfsecClientConfig {
   defaultNodeTags?: string[];
   /** Environment to use */
   env?: string;
+  /** Libconfsec implementation to use */
+  libconfsec?: ILibconfsec;
 }
 
 export interface KV {
@@ -71,14 +47,16 @@ export interface ResponseMetadata {
  */
 export class ConfsecResponse {
   private handle: number;
+  private libconfsec: ILibconfsec;
   private destroyed: boolean = false;
 
   private _metadata: ResponseMetadata | null = null;
   private _isStreaming: boolean | null = null;
   private _body: Buffer | null = null;
 
-  constructor(handle: number) {
+  constructor(libconfsec: ILibconfsec, handle: number) {
     this.handle = handle;
+    this.libconfsec = libconfsec;
   }
 
   /** Response metadata (headers, status, etc.) */
@@ -106,24 +84,24 @@ export class ConfsecResponse {
   }
 
   private getMetadata(): ResponseMetadata {
-    const raw = native.confsecResponseGetMetadata(this.handle);
+    const raw = this.libconfsec.confsecResponseGetMetadata(this.handle);
     return <ResponseMetadata>JSON.parse(raw.toString('utf8'));
   }
 
   private getIsStreaming(): boolean {
-    return native.confsecResponseIsStreaming(this.handle);
+    return this.libconfsec.confsecResponseIsStreaming(this.handle);
   }
 
   private getBody(): Buffer {
-    return native.confsecResponseGetBody(this.handle);
+    return this.libconfsec.confsecResponseGetBody(this.handle);
   }
 
   /**
    * Get a stream for reading chunked responses
    */
   getStream(): ConfsecResponseStream {
-    const streamHandle = native.confsecResponseGetStream(this.handle);
-    return new ConfsecResponseStream(streamHandle);
+    const streamHandle = this.libconfsec.confsecResponseGetStream(this.handle);
+    return new ConfsecResponseStream(this.libconfsec, this, streamHandle);
   }
 
   /**
@@ -131,7 +109,7 @@ export class ConfsecResponse {
    */
   destroy(): void {
     if (!this.destroyed) {
-      native.confsecResponseDestroy(this.handle);
+      this.libconfsec.confsecResponseDestroy(this.handle);
       this.destroyed = true;
     }
   }
@@ -142,10 +120,15 @@ export class ConfsecResponse {
  */
 export class ConfsecResponseStream {
   private handle: number;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private resp: ConfsecResponse;
+  private libconfsec: ILibconfsec;
   private destroyed: boolean = false;
 
-  constructor(handle: number) {
+  constructor(libconfsec: ILibconfsec, resp: ConfsecResponse, handle: number) {
     this.handle = handle;
+    this.resp = resp;
+    this.libconfsec = libconfsec;
   }
 
   /**
@@ -153,7 +136,7 @@ export class ConfsecResponseStream {
    * @returns Buffer containing the chunk, or null if no more chunks
    */
   getNext(): Buffer | null {
-    return native.confsecResponseStreamGetNext(this.handle);
+    return this.libconfsec.confsecResponseStreamGetNext(this.handle);
   }
 
   [Symbol.iterator](): IterableIterator<Buffer> {
@@ -173,8 +156,9 @@ export class ConfsecResponseStream {
    */
   destroy(): void {
     if (!this.destroyed) {
-      native.confsecResponseStreamDestroy(this.handle);
+      this.libconfsec.confsecResponseStreamDestroy(this.handle);
       this.destroyed = true;
+      this.resp.destroy();
     }
   }
 }
@@ -194,6 +178,7 @@ export interface WalletStatus {
 export class ConfsecClient {
   private handle: number;
   private destroyed: boolean = false;
+  private libconfsec: ILibconfsec;
 
   constructor(config: ConfsecClientConfig) {
     const {
@@ -202,9 +187,12 @@ export class ConfsecClient {
       maxCandidateNodes = 5,
       defaultNodeTags = [],
       env = null,
+      libconfsec = null,
     } = config;
 
-    this.handle = native.confsecClientCreate(
+    this.libconfsec = libconfsec || getLibConfsec();
+
+    this.handle = this.libconfsec.confsecClientCreate(
       apiKey,
       concurrentRequestsTarget,
       maxCandidateNodes,
@@ -217,35 +205,37 @@ export class ConfsecClient {
    * Get the default credit amount per request
    */
   getDefaultCreditAmountPerRequest(): number {
-    return native.confsecClientGetDefaultCreditAmountPerRequest(this.handle);
+    return this.libconfsec.confsecClientGetDefaultCreditAmountPerRequest(
+      this.handle
+    );
   }
 
   /**
    * Get the maximum number of candidate nodes
    */
   getMaxCandidateNodes(): number {
-    return native.confsecClientGetMaxCandidateNodes(this.handle);
+    return this.libconfsec.confsecClientGetMaxCandidateNodes(this.handle);
   }
 
   /**
    * Get the current default node tags
    */
   getDefaultNodeTags(): string[] {
-    return native.confsecClientGetDefaultNodeTags(this.handle);
+    return this.libconfsec.confsecClientGetDefaultNodeTags(this.handle);
   }
 
   /**
    * Set new default node tags
    */
   setDefaultNodeTags(tags: string[]): void {
-    native.confsecClientSetDefaultNodeTags(this.handle, tags);
+    this.libconfsec.confsecClientSetDefaultNodeTags(this.handle, tags);
   }
 
   /**
    * Get the current wallet status
    */
   getWalletStatus(): WalletStatus {
-    const raw = native.confsecClientGetWalletStatus(this.handle);
+    const raw = this.libconfsec.confsecClientGetWalletStatus(this.handle);
     return <WalletStatus>JSON.parse(raw);
   }
 
@@ -255,8 +245,11 @@ export class ConfsecClient {
    * @returns ConfsecResponse object
    */
   doRequest(request: string | Buffer): ConfsecResponse {
-    const responseHandle = native.confsecClientDoRequest(this.handle, request);
-    return new ConfsecResponse(responseHandle);
+    const responseHandle = this.libconfsec.confsecClientDoRequest(
+      this.handle,
+      request
+    );
+    return new ConfsecResponse(this.libconfsec, responseHandle);
   }
 
   /**
@@ -264,7 +257,7 @@ export class ConfsecClient {
    */
   destroy(): void {
     if (!this.destroyed) {
-      native.confsecClientDestroy(this.handle);
+      this.libconfsec.confsecClientDestroy(this.handle);
       this.destroyed = true;
     }
   }

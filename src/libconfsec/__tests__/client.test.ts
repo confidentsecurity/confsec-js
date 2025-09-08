@@ -1,4 +1,4 @@
-import { ConfsecClient, ConfsecResponse } from '../libconfsec';
+import { ConfsecClient, ConfsecResponse } from '../client';
 
 const URL = 'https://confsec.invalid/api/generate';
 const MODEL = 'llama3.2:1b';
