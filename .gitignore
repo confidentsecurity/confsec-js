@@ -150,3 +150,9 @@ native/include/
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# clangd
+compile_commands.json
+
+# Confsec cache
+.confsec/
