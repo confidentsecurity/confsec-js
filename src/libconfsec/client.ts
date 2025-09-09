@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { Fetch } from 'openai/core';
 import { ILibconfsec } from './types';
 
 function getLibConfsec(): ILibconfsec {
@@ -152,6 +153,40 @@ export class ConfsecResponseStream {
   }
 
   /**
+   * Create a ReadableStream from this ConfsecResponseStream
+   */
+  toReadableStream(): ReadableStream<Uint8Array> {
+    const iterator = this[Symbol.iterator]();
+
+    return new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller;
+      },
+
+      pull(controller) {
+        try {
+          const result = iterator.next();
+
+          if (result.done) {
+            controller.close();
+            return;
+          }
+
+          // Convert Buffer to Uint8Array
+          controller.enqueue(new Uint8Array(result.value));
+        } catch (error) {
+          controller.error(error);
+        }
+      },
+
+      cancel: () => {
+        // Clean up when stream is cancelled
+        this.destroy();
+      },
+    });
+  }
+
+  /**
    * Destroy the stream and free resources
    */
   destroy(): void {
@@ -250,6 +285,65 @@ export class ConfsecClient {
       request
     );
     return new ConfsecResponse(this.libconfsec, responseHandle);
+  }
+
+  fetcher(): Fetch {
+    const confsecFetch: Fetch = async (
+      url: RequestInfo,
+      init?: RequestInit
+    ): Promise<Response> => {
+      return new Promise(resolve => {
+        let request: Request;
+        if (typeof url === 'string') {
+          request = new Request(url, init);
+        } else {
+          request = url;
+        }
+
+        const resp = request.arrayBuffer().then(requestBody => {
+          const encoder = new TextEncoder();
+          const requestComponents: Uint8Array[] = [];
+          const requestLine = `${request.method} ${request.url} HTTP/1.1\r\n`;
+
+          requestComponents.push(encoder.encode(requestLine));
+          request.headers.forEach((value, name) => {
+            requestComponents.push(encoder.encode(`${name}: ${value}\r\n`));
+          });
+          if (!request.headers.has('content-length')) {
+            requestComponents.push(
+              encoder.encode(`content-length: ${requestBody.byteLength}\r\n`)
+            );
+          }
+          requestComponents.push(encoder.encode('\r\n'));
+          requestComponents.push(
+            requestBody ? new Uint8Array(requestBody) : new Uint8Array()
+          );
+
+          const rawRequest = Buffer.concat(requestComponents);
+          const confsecResponse = this.doRequest(rawRequest);
+
+          const responseBody = confsecResponse.isStreaming
+            ? confsecResponse.getStream().toReadableStream()
+            : new Uint8Array(confsecResponse.body);
+
+          const responseHeaders = new Headers();
+          confsecResponse.metadata.headers.forEach(header => {
+            responseHeaders.append(header.key, header.value);
+          });
+
+          const resp = new Response(responseBody, {
+            status: confsecResponse.metadata.status_code,
+            statusText: confsecResponse.metadata.reason_phrase,
+            headers: responseHeaders,
+          });
+
+          return resp;
+        });
+
+        resolve(resp);
+      });
+    };
+    return confsecFetch;
   }
 
   /**

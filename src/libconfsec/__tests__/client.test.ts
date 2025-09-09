@@ -132,6 +132,52 @@ describe('Native Bindings Success Cases', () => {
     const fullResponse = chunks.join('');
     expect(fullResponse.length).toBeGreaterThan(0);
   });
+
+  test('non-streaming request with confsecFetch', async () => {
+    const confsecFetch = client.fetcher();
+    const resp = await confsecFetch(URL, {
+      method: 'POST',
+      headers: DEFAULT_HEADERS,
+      body: new Uint8Array(getBody(PROMPT)),
+    });
+    expect(resp.status).toBe(200);
+    expect(resp.headers.get('content-type')).toContain('application/json');
+    const body = (await resp.json()) as { response: string };
+    expect(body).toHaveProperty('response');
+    expect(body.response.length).toBeGreaterThan(0);
+  });
+
+  test('streaming request with confsecFetch', async () => {
+    const confsecFetch = client.fetcher();
+    const resp = await confsecFetch(URL, {
+      method: 'POST',
+      headers: DEFAULT_HEADERS,
+      body: new Uint8Array(getBody(PROMPT, true)),
+    });
+    expect(resp.status).toBe(200);
+    const reader = resp.body?.getReader();
+    const decoder = new TextDecoder();
+    expect(reader).toBeDefined();
+    let body = '';
+    const chunks: string[] = [];
+    const done = false;
+    while (!done) {
+      const { value, done } = await reader!.read();
+      if (done) break;
+      body = body + decoder.decode(value);
+      const lines = body.split('\n');
+      if (lines.length <= 1) continue;
+      for (const line of lines.slice(0, -1)) {
+        const json = JSON.parse(line) as { response: string };
+        expect(json).toHaveProperty('response');
+        chunks.push(json.response);
+      }
+      body = lines[lines.length - 1];
+    }
+    expect(chunks.length).toBeGreaterThan(1);
+    const fullResponse = chunks.join('');
+    expect(fullResponse.length).toBeGreaterThan(0);
+  });
 });
 
 describe('Native Bindings Error Cases', () => {
