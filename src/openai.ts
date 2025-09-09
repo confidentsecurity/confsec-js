@@ -2,6 +2,7 @@ import { OpenAI as _OpenAI } from 'openai';
 import { Chat } from 'openai/resources/chat';
 import { Completions } from 'openai/resources/completions';
 import { ConfsecClient, ConfsecClientConfig } from './libconfsec/client';
+import { Closeable } from './closeable';
 
 const BASE_URL = 'https://confsec.invalid/v1';
 
@@ -12,13 +13,14 @@ export interface ClientOptions {
   confsecConfig?: ConfsecConfig;
 }
 
-export class OpenAI {
+export class OpenAI extends Closeable {
   private _confsecClient: ConfsecClient;
   private openaiClient: _OpenAI;
   public chat: Chat;
   public completions: Completions;
 
   constructor({ apiKey, confsecConfig }: ClientOptions) {
+    super();
     this._confsecClient = new ConfsecClient({ apiKey, ...confsecConfig });
     this.openaiClient = new _OpenAI({
       apiKey,
@@ -34,7 +36,7 @@ export class OpenAI {
     return this._confsecClient;
   }
 
-  close() {
-    this.confsecClient.destroy();
+  doClose() {
+    this.confsecClient.close();
   }
 }

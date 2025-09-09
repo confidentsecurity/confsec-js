@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { Fetch } from 'openai/core';
 import { ILibconfsec } from './types';
+import { Closeable } from '../closeable';
 
 function getLibConfsec(): ILibconfsec {
   //eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -46,16 +47,16 @@ export interface ResponseMetadata {
 /**
  * CONFSEC response object
  */
-export class ConfsecResponse {
+export class ConfsecResponse extends Closeable {
   private handle: number;
   private libconfsec: ILibconfsec;
-  private destroyed: boolean = false;
 
   private _metadata: ResponseMetadata | null = null;
   private _isStreaming: boolean | null = null;
   private _body: Buffer | null = null;
 
   constructor(libconfsec: ILibconfsec, handle: number) {
+    super();
     this.handle = handle;
     this.libconfsec = libconfsec;
   }
@@ -105,28 +106,22 @@ export class ConfsecResponse {
     return new ConfsecResponseStream(this.libconfsec, this, streamHandle);
   }
 
-  /**
-   * Destroy the response and free resources
-   */
-  destroy(): void {
-    if (!this.destroyed) {
-      this.libconfsec.confsecResponseDestroy(this.handle);
-      this.destroyed = true;
-    }
+  protected doClose(): void {
+    this.libconfsec.confsecResponseDestroy(this.handle);
   }
 }
 
 /**
  * CONFSEC response stream for chunked responses
  */
-export class ConfsecResponseStream {
+export class ConfsecResponseStream extends Closeable {
   private handle: number;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private resp: ConfsecResponse;
   private libconfsec: ILibconfsec;
-  private destroyed: boolean = false;
 
   constructor(libconfsec: ILibconfsec, resp: ConfsecResponse, handle: number) {
+    super();
     this.handle = handle;
     this.resp = resp;
     this.libconfsec = libconfsec;
@@ -181,7 +176,7 @@ export class ConfsecResponseStream {
 
       cancel: () => {
         // Clean up when stream is cancelled
-        this.destroy();
+        this.close();
       },
     });
   }
@@ -189,12 +184,9 @@ export class ConfsecResponseStream {
   /**
    * Destroy the stream and free resources
    */
-  destroy(): void {
-    if (!this.destroyed) {
-      this.libconfsec.confsecResponseStreamDestroy(this.handle);
-      this.destroyed = true;
-      this.resp.destroy();
-    }
+  protected doClose(): void {
+    this.libconfsec.confsecResponseStreamDestroy(this.handle);
+    this.resp.close();
   }
 }
 
@@ -210,12 +202,12 @@ export interface WalletStatus {
 /**
  * CONFSEC client for making secure AI inference requests
  */
-export class ConfsecClient {
+export class ConfsecClient extends Closeable {
   private handle: number;
-  private destroyed: boolean = false;
   private libconfsec: ILibconfsec;
 
   constructor(config: ConfsecClientConfig) {
+    super();
     const {
       apiKey,
       concurrentRequestsTarget = 10,
@@ -337,6 +329,10 @@ export class ConfsecClient {
             headers: responseHeaders,
           });
 
+          if (!confsecResponse.isStreaming) {
+            confsecResponse.close();
+          }
+
           return resp;
         });
 
@@ -349,10 +345,7 @@ export class ConfsecClient {
   /**
    * Destroy the client and free resources
    */
-  destroy(): void {
-    if (!this.destroyed) {
-      this.libconfsec.confsecClientDestroy(this.handle);
-      this.destroyed = true;
-    }
+  protected doClose(): void {
+    this.libconfsec.confsecClientDestroy(this.handle);
   }
 }

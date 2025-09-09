@@ -66,7 +66,7 @@ describe('Native Bindings Success Cases', () => {
   });
 
   afterAll(() => {
-    client.destroy();
+    client.close();
   });
 
   test('client configuration getters', () => {
@@ -93,7 +93,7 @@ describe('Native Bindings Success Cases', () => {
     const body = JSON.parse(resp.body.toString('utf8')) as {
       response: string;
     };
-    resp.destroy();
+    resp.close();
     expect(statusCode).toBe(200);
     expect(contentType).toContain('application/json');
     expect(body).toHaveProperty('response');
@@ -127,7 +127,7 @@ describe('Native Bindings Success Cases', () => {
       }
       body = lines[lines.length - 1];
     }
-    resp.destroy();
+    resp.close();
     expect(chunks.length).toBeGreaterThan(1);
     const fullResponse = chunks.join('');
     expect(fullResponse.length).toBeGreaterThan(0);
@@ -191,7 +191,7 @@ describe('Native Bindings Error Cases', () => {
 
   test('should throw error when using destroyed client', () => {
     const client = new ConfsecClient({ apiKey });
-    client.destroy();
+    client.close();
     expect(() => {
       client.getMaxCandidateNodes();
     }).toThrow('client not found');
