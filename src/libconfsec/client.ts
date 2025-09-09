@@ -42,7 +42,7 @@ export interface WalletStatus {
  * CONFSEC client for making secure AI inference requests
  */
 export class ConfsecClient extends Closeable {
-  private handle: number;
+  private _handle: number;
   private libconfsec: ILibconfsec;
 
   constructor(config: ConfsecClientConfig) {
@@ -58,13 +58,17 @@ export class ConfsecClient extends Closeable {
 
     this.libconfsec = libconfsec || getLibConfsec();
 
-    this.handle = this.libconfsec.confsecClientCreate(
+    this._handle = this.libconfsec.confsecClientCreate(
       apiKey,
       concurrentRequestsTarget,
       maxCandidateNodes,
       defaultNodeTags,
-      env
+      env || 'prod'
     );
+  }
+
+  get handle(): number {
+    return this._handle;
   }
 
   /**
@@ -72,7 +76,7 @@ export class ConfsecClient extends Closeable {
    */
   getDefaultCreditAmountPerRequest(): number {
     return this.libconfsec.confsecClientGetDefaultCreditAmountPerRequest(
-      this.handle
+      this._handle
     );
   }
 
@@ -80,28 +84,28 @@ export class ConfsecClient extends Closeable {
    * Get the maximum number of candidate nodes
    */
   getMaxCandidateNodes(): number {
-    return this.libconfsec.confsecClientGetMaxCandidateNodes(this.handle);
+    return this.libconfsec.confsecClientGetMaxCandidateNodes(this._handle);
   }
 
   /**
    * Get the current default node tags
    */
   getDefaultNodeTags(): string[] {
-    return this.libconfsec.confsecClientGetDefaultNodeTags(this.handle);
+    return this.libconfsec.confsecClientGetDefaultNodeTags(this._handle);
   }
 
   /**
    * Set new default node tags
    */
   setDefaultNodeTags(tags: string[]): void {
-    this.libconfsec.confsecClientSetDefaultNodeTags(this.handle, tags);
+    this.libconfsec.confsecClientSetDefaultNodeTags(this._handle, tags);
   }
 
   /**
    * Get the current wallet status
    */
   getWalletStatus(): WalletStatus {
-    const raw = this.libconfsec.confsecClientGetWalletStatus(this.handle);
+    const raw = this.libconfsec.confsecClientGetWalletStatus(this._handle);
     return <WalletStatus>JSON.parse(raw);
   }
 
@@ -112,7 +116,7 @@ export class ConfsecClient extends Closeable {
    */
   doRequest(request: string | Buffer): ConfsecResponse {
     const responseHandle = this.libconfsec.confsecClientDoRequest(
-      this.handle,
+      this._handle,
       request
     );
     return new ConfsecResponse(this.libconfsec, responseHandle);
@@ -185,6 +189,6 @@ export class ConfsecClient extends Closeable {
    * Destroy the client and free resources
    */
   protected doClose(): void {
-    this.libconfsec.confsecClientDestroy(this.handle);
+    this.libconfsec.confsecClientDestroy(this._handle);
   }
 }
