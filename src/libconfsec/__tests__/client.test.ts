@@ -1,25 +1,5 @@
 import { ConfsecClient } from '../client';
-import { ILibconfsec } from '../types';
-
-class MockLibconfsec implements ILibconfsec {
-  confsecClientCreate = jest.fn();
-  confsecClientDestroy = jest.fn();
-  confsecClientGetDefaultCreditAmountPerRequest = jest.fn();
-  confsecClientGetMaxCandidateNodes = jest.fn();
-  confsecClientGetDefaultNodeTags = jest.fn();
-  confsecClientSetDefaultNodeTags = jest.fn();
-  confsecClientGetWalletStatus = jest.fn();
-  confsecClientDoRequest = jest.fn();
-
-  confsecResponseDestroy = jest.fn();
-  confsecResponseGetMetadata = jest.fn();
-  confsecResponseIsStreaming = jest.fn();
-  confsecResponseGetBody = jest.fn();
-  confsecResponseGetStream = jest.fn();
-
-  confsecResponseStreamDestroy = jest.fn();
-  confsecResponseStreamGetNext = jest.fn();
-}
+import { MockLibconfsec } from './utils/mocks';
 
 describe('ConfsecClient initialization', () => {
   test('passes params to confsecClientCreate', () => {

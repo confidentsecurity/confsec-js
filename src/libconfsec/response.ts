@@ -21,7 +21,7 @@ export interface ResponseMetadata {
  * CONFSEC response object
  */
 export class ConfsecResponse extends Closeable {
-  private handle: number;
+  private _handle: number;
   private libconfsec: ILibconfsec;
 
   private _metadata: ResponseMetadata | null = null;
@@ -30,8 +30,12 @@ export class ConfsecResponse extends Closeable {
 
   constructor(libconfsec: ILibconfsec, handle: number) {
     super();
-    this.handle = handle;
+    this._handle = handle;
     this.libconfsec = libconfsec;
+  }
+
+  get handle(): number {
+    return this._handle;
   }
 
   /** Response metadata (headers, status, etc.) */
@@ -59,28 +63,28 @@ export class ConfsecResponse extends Closeable {
   }
 
   private getMetadata(): ResponseMetadata {
-    const raw = this.libconfsec.confsecResponseGetMetadata(this.handle);
+    const raw = this.libconfsec.confsecResponseGetMetadata(this._handle);
     return <ResponseMetadata>JSON.parse(raw.toString('utf8'));
   }
 
   private getIsStreaming(): boolean {
-    return this.libconfsec.confsecResponseIsStreaming(this.handle);
+    return this.libconfsec.confsecResponseIsStreaming(this._handle);
   }
 
   private getBody(): Buffer {
-    return this.libconfsec.confsecResponseGetBody(this.handle);
+    return this.libconfsec.confsecResponseGetBody(this._handle);
   }
 
   /**
    * Get a stream for reading chunked responses
    */
   getStream(): ConfsecResponseStream {
-    const streamHandle = this.libconfsec.confsecResponseGetStream(this.handle);
+    const streamHandle = this.libconfsec.confsecResponseGetStream(this._handle);
     return new ConfsecResponseStream(this.libconfsec, this, streamHandle);
   }
 
   protected doClose(): void {
-    this.libconfsec.confsecResponseDestroy(this.handle);
+    this.libconfsec.confsecResponseDestroy(this._handle);
   }
 }
 
@@ -88,16 +92,20 @@ export class ConfsecResponse extends Closeable {
  * CONFSEC response stream for chunked responses
  */
 export class ConfsecResponseStream extends Closeable {
-  private handle: number;
+  private _handle: number;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private resp: ConfsecResponse;
   private libconfsec: ILibconfsec;
 
   constructor(libconfsec: ILibconfsec, resp: ConfsecResponse, handle: number) {
     super();
-    this.handle = handle;
+    this._handle = handle;
     this.resp = resp;
     this.libconfsec = libconfsec;
+  }
+
+  get handle(): number {
+    return this._handle;
   }
 
   /**
@@ -105,7 +113,7 @@ export class ConfsecResponseStream extends Closeable {
    * @returns Buffer containing the chunk, or null if no more chunks
    */
   getNext(): Buffer | null {
-    return this.libconfsec.confsecResponseStreamGetNext(this.handle);
+    return this.libconfsec.confsecResponseStreamGetNext(this._handle);
   }
 
   [Symbol.iterator](): IterableIterator<Buffer> {
@@ -115,6 +123,7 @@ export class ConfsecResponseStream extends Closeable {
   next(): IteratorResult<Buffer> {
     const chunk = this.getNext();
     if (chunk === null) {
+      this.close();
       return { done: true, value: undefined };
     }
     return { done: false, value: chunk };
@@ -158,7 +167,7 @@ export class ConfsecResponseStream extends Closeable {
    * Destroy the stream and free resources
    */
   protected doClose(): void {
-    this.libconfsec.confsecResponseStreamDestroy(this.handle);
+    this.libconfsec.confsecResponseStreamDestroy(this._handle);
     this.resp.close();
   }
 }
