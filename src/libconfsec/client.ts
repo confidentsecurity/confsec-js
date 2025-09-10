@@ -1,14 +1,23 @@
-import * as path from 'path';
+import { createRequire } from 'module';
 import { Fetch } from 'openai/core';
 import { ILibconfsec } from './types';
 import { Closeable } from '../closeable';
 import { ConfsecResponse } from './response';
 
 function getLibConfsec(): ILibconfsec {
-  //eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require(
-    path.join(__dirname, '../../build/Release/confsec.node')
-  ) as ILibconfsec;
+  // Create require function that works in both CommonJS and ES modules
+  const requireFunc =
+    typeof __dirname !== 'undefined'
+      ? require // CommonJS
+      : createRequire(import.meta.url); // ES modules
+
+  // Try built package location first (same directory)
+  try {
+    return requireFunc('./confsec.node') as ILibconfsec;
+  } catch {
+    // Fall back to source/development location
+    return requireFunc('../../build/Release/confsec.node') as ILibconfsec;
+  }
 }
 
 /**

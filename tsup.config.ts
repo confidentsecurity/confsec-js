@@ -10,4 +10,5 @@ export default defineConfig({
   minify: false,
   target: 'es2020',
   outDir: 'dist',
+  external: ['./confsec.node'],
 });

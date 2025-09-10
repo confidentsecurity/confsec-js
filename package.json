@@ -1,5 +1,5 @@
 {
-  "name": "confsec-js",
+  "name": "confsec",
   "version": "0.1.0",
   "description": "JavaScript/TypeScript SDK for CONFSEC - secure and anonymous AI inference",
   "main": "dist/index.js",
@@ -10,17 +10,19 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
-    }
+    },
+    "./dist/confsec.node": "./dist/confsec.node"
   },
   "files": [
     "dist",
-    "build",
     "binding.gyp",
-    "native"
+    "native/src",
+    "scripts"
   ],
   "scripts": {
-    "build": "npm run build:native && tsup",
+    "build": "npm run build:native && tsup && npm run copy:native",
     "build:native": "node-gyp rebuild",
+    "copy:native": "cp build/Release/confsec.node dist/",
     "dev": "tsup --watch",
     "test": "jest --testPathIgnorePatterns '^.*-e2e\\.test\\.ts$'",
     "test:e2e": "jest --testPathPattern '^.*-e2e\\.test\\.ts$'",
