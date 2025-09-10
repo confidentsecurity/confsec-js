@@ -135,7 +135,7 @@ describe('Native Bindings Success Cases', () => {
   });
 
   test('non-streaming request with confsecFetch', async () => {
-    const confsecFetch = client.fetcher();
+    const confsecFetch = client.getConfsecFetch();
     const resp = await confsecFetch(URL, {
       method: 'POST',
       headers: DEFAULT_HEADERS,
@@ -149,7 +149,7 @@ describe('Native Bindings Success Cases', () => {
   });
 
   test('streaming request with confsecFetch', async () => {
-    const confsecFetch = client.fetcher();
+    const confsecFetch = client.getConfsecFetch();
     const resp = await confsecFetch(URL, {
       method: 'POST',
       headers: DEFAULT_HEADERS,

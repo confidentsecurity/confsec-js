@@ -122,7 +122,7 @@ export class ConfsecClient extends Closeable {
     return new ConfsecResponse(this.libconfsec, responseHandle);
   }
 
-  fetcher(): Fetch {
+  getConfsecFetch(): Fetch {
     const confsecFetch: Fetch = async (
       url: RequestInfo,
       init?: RequestInit
@@ -135,26 +135,9 @@ export class ConfsecClient extends Closeable {
           request = url;
         }
 
-        const resp = request.arrayBuffer().then(requestBody => {
-          const encoder = new TextEncoder();
-          const requestComponents: Uint8Array[] = [];
-          const requestLine = `${request.method} ${request.url} HTTP/1.1\r\n`;
-
-          requestComponents.push(encoder.encode(requestLine));
-          request.headers.forEach((value, name) => {
-            requestComponents.push(encoder.encode(`${name}: ${value}\r\n`));
-          });
-          if (!request.headers.has('content-length')) {
-            requestComponents.push(
-              encoder.encode(`content-length: ${requestBody.byteLength}\r\n`)
-            );
-          }
-          requestComponents.push(encoder.encode('\r\n'));
-          requestComponents.push(
-            requestBody ? new Uint8Array(requestBody) : new Uint8Array()
-          );
-
-          const rawRequest = Buffer.concat(requestComponents);
+        const response = request.arrayBuffer().then(requestBody => {
+          preProcessRequest(request, requestBody);
+          const rawRequest = prepareRequest(request, requestBody);
           const confsecResponse = this.doRequest(rawRequest);
 
           const responseBody = confsecResponse.isStreaming
@@ -166,7 +149,7 @@ export class ConfsecClient extends Closeable {
             responseHeaders.append(header.key, header.value);
           });
 
-          const resp = new Response(responseBody, {
+          const httpResponse = new Response(responseBody, {
             status: confsecResponse.metadata.status_code,
             statusText: confsecResponse.metadata.reason_phrase,
             headers: responseHeaders,
@@ -176,10 +159,10 @@ export class ConfsecClient extends Closeable {
             confsecResponse.close();
           }
 
-          return resp;
+          return httpResponse;
         });
 
-        resolve(resp);
+        resolve(response);
       });
     };
     return confsecFetch;
@@ -191,4 +174,93 @@ export class ConfsecClient extends Closeable {
   protected doClose(): void {
     this.libconfsec.confsecClientDestroy(this._handle);
   }
+}
+
+const OPENAI_COMPLETIONS_PATH = '/v1/completions';
+const OPENAI_CHAT_COMPLETIONS_PATH = '/v1/chat/completions';
+
+export function preProcessRequest(
+  request: Request,
+  body: ArrayBuffer | null
+): void {
+  if (request.url.includes(OPENAI_COMPLETIONS_PATH)) {
+    maybeAddModelTag(request, body);
+  }
+  if (request.url.includes(OPENAI_CHAT_COMPLETIONS_PATH)) {
+    maybeAddModelTag(request, body);
+  }
+}
+
+export function maybeAddModelTag(
+  request: Request,
+  body: ArrayBuffer | null
+): void {
+  if (body == null) {
+    return;
+  }
+  let bodyJson: { model: string };
+  try {
+    bodyJson = JSON.parse(new TextDecoder().decode(body)) as { model: string };
+  } catch (e) {
+    return;
+  }
+
+  if (!Object.hasOwnProperty.call(bodyJson, 'model')) {
+    return;
+  }
+
+  let header = '';
+  const existingHeader = request.headers.get('x-confsec-node-tags');
+  const modelTag = `model=${bodyJson.model}`;
+  if (existingHeader != null) {
+    const hasModelTag = existingHeader.split(',').some(tag => {
+      return tag.startsWith('model=');
+    });
+    if (hasModelTag) {
+      header = existingHeader;
+    } else {
+      header = `${existingHeader},${modelTag}`;
+    }
+  } else {
+    header = modelTag;
+  }
+
+  request.headers.set('x-confsec-node-tags', header);
+}
+
+export function prepareRequest(
+  request: Request,
+  body: ArrayBuffer | null
+): Buffer {
+  const encoder = new TextEncoder();
+  const requestComponents: Uint8Array[] = [];
+
+  const url = new URL(request.url);
+  // Request line
+  requestComponents.push(
+    encoder.encode(`${request.method} ${url.pathname} HTTP/1.1\r\n`)
+  );
+  // Manually insert host header if it's not already present
+  if (!request.headers.has('host')) {
+    requestComponents.push(encoder.encode(`host: ${url.host}\r\n`));
+  }
+  // Rest of headers
+  request.headers.forEach((value, name) => {
+    requestComponents.push(encoder.encode(`${name}: ${value}\r\n`));
+  });
+  // Manually insert content-length header if it's not already present
+  if (body != null && !request.headers.has('content-length')) {
+    requestComponents.push(
+      encoder.encode(`content-length: ${body.byteLength}\r\n`)
+    );
+  }
+  // End of headers
+  requestComponents.push(encoder.encode('\r\n'));
+
+  // Body
+  if (body != null) {
+    requestComponents.push(new Uint8Array(body));
+  }
+
+  return Buffer.concat(requestComponents);
 }

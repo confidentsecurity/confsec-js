@@ -25,7 +25,7 @@ export class OpenAI extends Closeable {
     this.openaiClient = new _OpenAI({
       apiKey,
       baseURL: BASE_URL,
-      fetch: this.confsecClient.fetcher(),
+      fetch: this.confsecClient.getConfsecFetch(),
     });
 
     this.chat = this.openaiClient.chat;
