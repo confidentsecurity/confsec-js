@@ -17,7 +17,8 @@
     "dist",
     "binding.gyp",
     "native/src",
-    "scripts"
+    "scripts",
+    "LICENSE"
   ],
   "scripts": {
     "build": "npm run build:native && tsup && npm run copy:native",
@@ -47,15 +48,15 @@
     "sdk"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/confsec-js.git"
+    "url": "git+https://github.com/confidentsecurity/confsec-js.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/confsec-js/issues"
+    "url": "https://github.com/confidentsecurity/confsec-js/issues"
   },
-  "homepage": "https://github.com/your-org/confsec-js#readme",
+  "homepage": "https://github.com/confidentsecurity/confsec-js",
   "devDependencies": {
     "@types/jest": "^29.5.8",
     "@types/node": "^20.9.0",
