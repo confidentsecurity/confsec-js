@@ -1,4 +1,4 @@
-import { ILibconfsec } from '../types';
+import { ILibconfsec } from '../../types';
 
 export class MockLibconfsec implements ILibconfsec {
   confsecClientCreate = jest.fn();
