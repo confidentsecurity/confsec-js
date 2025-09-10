@@ -11,7 +11,7 @@ without the need to deploy and manage the CONFSEC proxy.
 ## Installation
 
 ```bash
-npm install confsec
+npm install @confidentsecurity/confsec
 ```
 
 ## Quickstart
@@ -20,7 +20,7 @@ Use our OpenAI wrapper as a drop-in replacement for existing OpenAI clients:
 
 ```javascript
 // Use OpenAI wrapper
-import { OpenAI } from 'confsec';
+import { OpenAI } from '@confidentsecurity/confsec';
 const client = new OpenAI();
 ```
 
@@ -28,7 +28,7 @@ Or, for lower-level access, use the CONFSEC-enabled `fetch` implementation direc
 
 ```javascript
 // Use fetch implementation
-import { ConfsecClient } from 'confsec';
+import { ConfsecClient } from '@confidentsecurity/confsec';
 
 const client = new ConfsecClient({ apiKey: process.env.CONFSEC_API_KEY });
 const confsecFetch = client.getConfsecFetch();
@@ -74,7 +74,7 @@ Currently, the following subset of APIs are supported:
 - Chat
 
 ```javascript
-import { OpenAI } from 'confsec';
+import { OpenAI } from '@confidentsecurity/confsec';
 
 const client = new OpenAI();
 
@@ -113,7 +113,7 @@ This should be done explicitly in a try/finally block. Failure to do so may
 result in credits being lost.
 
 ```javascript
-import { ConfsecClient } from 'confsec';
+import { ConfsecClient } from '@confidentsecurity/confsec';
 
 const client = new ConfsecClient({ apiKey: process.env.CONFSEC_API_KEY });
 
