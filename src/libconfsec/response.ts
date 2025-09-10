@@ -34,6 +34,7 @@ export class ConfsecResponse extends Closeable {
     this.libconfsec = libconfsec;
   }
 
+  /** Internal handle */
   get handle(): number {
     return this._handle;
   }

@@ -39,23 +39,21 @@ export interface WalletStatus {
 }
 
 /**
- * CONFSEC client for making secure AI inference requests
+ * Client for making requests via CONFSEC.
  */
 export class ConfsecClient extends Closeable {
   private _handle: number;
   private libconfsec: ILibconfsec;
 
-  constructor(config: ConfsecClientConfig) {
+  constructor({
+    apiKey,
+    concurrentRequestsTarget = 10,
+    maxCandidateNodes = 5,
+    defaultNodeTags = [],
+    env = undefined,
+    libconfsec = undefined,
+  }: ConfsecClientConfig) {
     super();
-    const {
-      apiKey,
-      concurrentRequestsTarget = 10,
-      maxCandidateNodes = 5,
-      defaultNodeTags = [],
-      env = null,
-      libconfsec = null,
-    } = config;
-
     this.libconfsec = libconfsec || getLibConfsec();
 
     this._handle = this.libconfsec.confsecClientCreate(
@@ -67,6 +65,9 @@ export class ConfsecClient extends Closeable {
     );
   }
 
+  /**
+   * Get the underlying handle for this client
+   */
   get handle(): number {
     return this._handle;
   }
@@ -122,6 +123,9 @@ export class ConfsecClient extends Closeable {
     return new ConfsecResponse(this.libconfsec, responseHandle);
   }
 
+  /**
+   * Get a Fetch function that can be used to make requests through the CONFSEC network
+   */
   getConfsecFetch(): Fetch {
     const confsecFetch: Fetch = async (
       url: RequestInfo,
@@ -169,7 +173,7 @@ export class ConfsecClient extends Closeable {
   }
 
   /**
-   * Destroy the client and free resources
+   * Close the client and free resources
    */
   protected doClose(): void {
     this.libconfsec.confsecClientDestroy(this._handle);
