@@ -9,7 +9,7 @@ function getLibconfsecVersion() {
   if (process.env.LIBCONFSEC_VERSION) {
     return process.env.LIBCONFSEC_VERSION;
   }
-  
+
   try {
     const packageJson = require('../package.json');
     return packageJson.libconfsecVersion || '0.1.0';
@@ -19,7 +19,8 @@ function getLibconfsecVersion() {
 }
 
 const LIBCONFSEC_VERSION = getLibconfsecVersion();
-const BASE_URL = 'https://github.com/confidentsecurity/libconfsec/releases/download';
+const BASE_URL =
+  'https://github.com/confidentsecurity/libconfsec/releases/download';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 function getPlatformInfo() {
@@ -57,7 +58,7 @@ function downloadFile(url, destination) {
     console.log(`Downloading ${url}...`);
 
     const file = fs.createWriteStream(destination);
-    
+
     const options = {
       headers: {},
     };
@@ -109,13 +110,15 @@ function extractZip(zipPath, extractDir) {
 
 async function downloadLibconfsec() {
   const { osName, archName } = getPlatformInfo();
-  
+
   const libDir = path.join(__dirname, '..', 'native', 'lib');
-  
+
   fs.mkdirSync(libDir, { recursive: true });
-  
+
   // Clear existing libconfsec files
-  const existingFiles = fs.readdirSync(libDir).filter(f => f.startsWith('libconfsec'));
+  const existingFiles = fs
+    .readdirSync(libDir)
+    .filter(f => f.startsWith('libconfsec'));
   existingFiles.forEach(file => {
     fs.unlinkSync(path.join(libDir, file));
   });
@@ -125,7 +128,7 @@ async function downloadLibconfsec() {
   const tag = `libconfsec%2Fv${LIBCONFSEC_VERSION}`;
   const libFilename = `libconfsec_${osName}_${archName}.zip`;
   const shaFilename = `${libFilename}.sha256`;
-  
+
   const libUrl = `${BASE_URL}/${tag}/${libFilename}`;
   const shaUrl = `${BASE_URL}/${tag}/${shaFilename}`;
 
@@ -139,31 +142,34 @@ async function downloadLibconfsec() {
     ]);
 
     console.log('Download completed, extracting...');
-    
+
     extractZip(libPath, libDir);
-    
+
     // Clean up ZIP file
     fs.unlinkSync(libPath);
-    
+
     // Verify extracted files
     const libraryPath = path.join(libDir, 'libconfsec.a');
     const headerPath = path.join(libDir, 'libconfsec.h');
-    
+
     if (!fs.existsSync(libraryPath)) {
       throw new Error('libconfsec.a not found after extraction');
     }
-    
+
     if (!fs.existsSync(headerPath)) {
       throw new Error('libconfsec.h not found after extraction');
     }
 
     console.log('libconfsec extraction completed successfully');
-    console.log(`Library: ${libraryPath} (${fs.statSync(libraryPath).size} bytes)`);
-    console.log(`Header: ${headerPath} (${fs.statSync(headerPath).size} bytes)`);
-    
+    console.log(
+      `Library: ${libraryPath} (${fs.statSync(libraryPath).size} bytes)`
+    );
+    console.log(
+      `Header: ${headerPath} (${fs.statSync(headerPath).size} bytes)`
+    );
   } catch (error) {
     console.error('Failed to download libconfsec:', error.message);
-    
+
     // Clean up partial downloads
     [libPath, shaPath].forEach(file => {
       if (fs.existsSync(file)) {
@@ -177,7 +183,7 @@ async function downloadLibconfsec() {
 
 function checkExistingFiles() {
   const libDir = path.join(__dirname, '..', 'native', 'lib');
-  
+
   const libraryPath = path.join(libDir, 'libconfsec.a');
   const headerPath = path.join(libDir, 'libconfsec.h');
 

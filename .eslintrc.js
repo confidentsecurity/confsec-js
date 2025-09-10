@@ -27,5 +27,5 @@ module.exports = {
     'prefer-const': 'error',
     'prettier/prettier': 'error',
   },
-  ignorePatterns: ['dist/', 'node_modules/', '*.js', "tsup.config.ts"],
+  ignorePatterns: ['dist/', 'node_modules/', '*.js', 'tsup.config.ts'],
 };
