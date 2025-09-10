@@ -10,12 +10,11 @@ function getLibconfsecVersion() {
     return process.env.LIBCONFSEC_VERSION;
   }
 
-  try {
-    const packageJson = require('../package.json');
-    return packageJson.libconfsecVersion || '0.1.0';
-  } catch (error) {
-    return '0.1.0';
+  const packageJson = require('../package.json');
+  if (!packageJson.libconfsecVersion) {
+    throw new Error('LIBCONFSEC_VERSION not set and not found in package.json');
   }
+  return packageJson.libconfsecVersion
 }
 
 const LIBCONFSEC_VERSION = getLibconfsecVersion();
@@ -91,7 +90,7 @@ function downloadFile(url, destination) {
       });
 
       file.on('error', err => {
-        fs.unlink(destination, () => {});
+        fs.unlink(destination, () => { });
         reject(err);
       });
     });
