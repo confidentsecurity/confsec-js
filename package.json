@@ -22,9 +22,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run build:native && tsup && npm run copy:native",
+    "build": "npm run build:native && tsup",
     "build:native": "node-gyp rebuild",
-    "copy:native": "cp build/Release/confsec.node dist/",
     "dev": "tsup --watch",
     "test": "jest --testPathIgnorePatterns '^.*-e2e\\.test\\.ts$'",
     "test:e2e": "jest --testPathPattern '^.*-e2e\\.test\\.ts$'",
@@ -37,6 +36,7 @@
     "prepare": "husky install",
     "preinstall": "node scripts/download-libconfsec.js",
     "install": "node-gyp rebuild",
+    "postinstall": "node scripts/copy-native.js",
     "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "keywords": [
