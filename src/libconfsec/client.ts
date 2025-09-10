@@ -6,10 +6,16 @@ import { ConfsecResponse } from './response';
 
 function getLibConfsec(): ILibconfsec {
   // Create require function that works in both CommonJS and ES modules
-  const requireFunc =
-    typeof __dirname !== 'undefined'
-      ? require // CommonJS
-      : createRequire(import.meta.url); // ES modules
+  let requireFunc: typeof require;
+
+  if (typeof __dirname !== 'undefined') {
+    // CommonJS environment (including Jest)
+    requireFunc = require;
+  } else {
+    // ES modules environment - use dynamic import to avoid syntax issues with jest
+    //eslint-disable-next-line no-eval,@typescript-eslint/no-unsafe-argument
+    requireFunc = createRequire(eval('import.meta.url'));
+  }
 
   // Try built package location first (same directory)
   try {
