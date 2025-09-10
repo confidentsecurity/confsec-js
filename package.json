@@ -76,7 +76,7 @@
     "openai": "^4.20.1"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=20"
   },
   "libconfsecVersion": "0.1.0"
 }
