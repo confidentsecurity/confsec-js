@@ -29,6 +29,11 @@ jobs:
       - name: Build package
         run: npm run build
 
+      - name: Run e2e tests
+        run: npm run test:e2e
+        env:
+          CONFSEC_API_KEY: ${{ secrets.CONFSEC_API_KEY }}
+
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:

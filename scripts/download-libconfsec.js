@@ -14,7 +14,7 @@ function getLibconfsecVersion() {
   if (!packageJson.libconfsecVersion) {
     throw new Error('LIBCONFSEC_VERSION not set and not found in package.json');
   }
-  return packageJson.libconfsecVersion
+  return packageJson.libconfsecVersion;
 }
 
 const LIBCONFSEC_VERSION = getLibconfsecVersion();
@@ -90,7 +90,7 @@ function downloadFile(url, destination) {
       });
 
       file.on('error', err => {
-        fs.unlink(destination, () => { });
+        fs.unlink(destination, () => {});
         reject(err);
       });
     });
