@@ -1,6 +1,7 @@
 import { MockLibconfsec } from './utils/mocks';
 import * as client from '../client';
 
+const API_URL = 'https://api.openpcc-example.com';
 const BASE_URL = 'https://confsec.invalid';
 
 function url(path: string): string {
@@ -137,6 +138,7 @@ describe('CONFSEC fetch', () => {
   beforeEach(() => {
     lc = new MockLibconfsec();
     cc = new client.ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'test',
       libconfsec: lc,
     });

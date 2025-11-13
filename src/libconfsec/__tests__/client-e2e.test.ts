@@ -1,11 +1,15 @@
 import { ConfsecClient } from '../client';
 import { ConfsecResponse } from '../response';
 
-const URL = 'https://confsec.invalid/api/generate';
-const MODEL = 'llama3.2:1b';
+type CompletionResponse = {
+  choices: { text: string }[];
+};
+
+const API_URL = 'https://app.confident.security';
+const URL = 'https://confsec.invalid/v1/completions';
+const MODEL = 'gpt-oss:20b';
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
-  Accept: 'application/x-ndjson',
   'X-Confsec-Node-Tags': `model=${MODEL}`,
 };
 const PROMPT = 'Count to ten in Spanish';
@@ -59,10 +63,14 @@ describe('Native Bindings Success Cases', () => {
   beforeAll(() => {
     const apiKey = getApiKey();
     client = new ConfsecClient({
+      apiUrl: API_URL,
       apiKey,
+      oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+      oidcSubjectRegex:
+        '^https://github.com/confidentsecurity/T/.github/workflows.*',
       concurrentRequestsTarget: 5,
       maxCandidateNodes: 3,
-      defaultNodeTags: ['model=llama3.2:1b'],
+      defaultNodeTags: ['model=gpt-oss:20b'],
     });
   });
 
@@ -72,7 +80,7 @@ describe('Native Bindings Success Cases', () => {
 
   test('client configuration getters', () => {
     expect(client.getMaxCandidateNodes()).toBe(3);
-    expect(client.getDefaultNodeTags()).toEqual(['model=llama3.2:1b']);
+    expect(client.getDefaultNodeTags()).toEqual(['model=gpt-oss:20b']);
     expect(client.getDefaultCreditAmountPerRequest()).toBeGreaterThan(1);
   });
 
@@ -91,14 +99,12 @@ describe('Native Bindings Success Cases', () => {
     const resp = client.doRequest(req);
     const statusCode = resp.metadata.status_code;
     const contentType = getContentType(resp);
-    const body = JSON.parse(resp.body.toString('utf8')) as {
-      response: string;
-    };
+    const body = JSON.parse(resp.body.toString('utf8')) as CompletionResponse;
     resp.close();
     expect(statusCode).toBe(200);
     expect(contentType).toContain('application/json');
-    expect(body).toHaveProperty('response');
-    expect(body.response.length).toBeGreaterThan(0);
+    expect(body).toHaveProperty('choices');
+    expect(body.choices.length).toBeGreaterThan(0);
   });
 
   test('streaming request', () => {
@@ -113,7 +119,7 @@ describe('Native Bindings Success Cases', () => {
     const contentType = getContentType(resp);
     const isStreaming = resp.isStreaming;
     expect(statusCode).toBe(200);
-    expect(contentType).toContain('application/x-ndjson');
+    expect(contentType).toContain('text/event-stream');
     expect(isStreaming).toBe(true);
     let body = '';
     const chunks: string[] = [];
@@ -121,10 +127,14 @@ describe('Native Bindings Success Cases', () => {
       body = body + chunk.toString('utf8');
       const lines = body.split('\n');
       if (lines.length <= 1) continue;
-      for (const line of lines.slice(0, -1)) {
-        const json = JSON.parse(line) as { response: string };
-        expect(json).toHaveProperty('response');
-        chunks.push(json.response);
+      for (let line of lines.slice(0, -1)) {
+        line = line.trim().replace(/^data: /, '');
+        if (line === '[DONE]' || line === '') break;
+        const json = JSON.parse(line) as CompletionResponse;
+        expect(json).toHaveProperty('choices');
+        if (json.choices.length > 0) {
+          chunks.push(json.choices[0].text);
+        }
       }
       body = lines[lines.length - 1];
     }
@@ -143,9 +153,9 @@ describe('Native Bindings Success Cases', () => {
     });
     expect(resp.status).toBe(200);
     expect(resp.headers.get('content-type')).toContain('application/json');
-    const body = (await resp.json()) as { response: string };
-    expect(body).toHaveProperty('response');
-    expect(body.response.length).toBeGreaterThan(0);
+    const body = (await resp.json()) as CompletionResponse;
+    expect(body).toHaveProperty('choices');
+    expect(body.choices.length).toBeGreaterThan(0);
   });
 
   test('streaming request with confsecFetch', async () => {
@@ -168,10 +178,14 @@ describe('Native Bindings Success Cases', () => {
       body = body + decoder.decode(value);
       const lines = body.split('\n');
       if (lines.length <= 1) continue;
-      for (const line of lines.slice(0, -1)) {
-        const json = JSON.parse(line) as { response: string };
-        expect(json).toHaveProperty('response');
-        chunks.push(json.response);
+      for (let line of lines.slice(0, -1)) {
+        line = line.trim().replace(/^data: /, '');
+        if (line === '[DONE]' || line === '') break;
+        const json = JSON.parse(line) as CompletionResponse;
+        expect(json).toHaveProperty('choices');
+        if (json.choices.length > 0) {
+          chunks.push(json.choices[0].text);
+        }
       }
       body = lines[lines.length - 1];
     }
@@ -186,12 +200,18 @@ describe('Native Bindings Error Cases', () => {
 
   test('should throw error for invalid API key', () => {
     expect(() => {
-      new ConfsecClient({ apiKey: 'invalid' });
+      new ConfsecClient({ apiUrl: API_URL, apiKey: 'invalid' });
     }).toThrow('invalid API key');
   });
 
   test('should throw error when using destroyed client', () => {
-    const client = new ConfsecClient({ apiKey });
+    const client = new ConfsecClient({
+      apiUrl: API_URL,
+      apiKey,
+      oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+      oidcSubjectRegex:
+        '^https://github.com/confidentsecurity/T/.github/workflows.*',
+    });
     client.close();
     expect(() => {
       client.getMaxCandidateNodes();

@@ -2,6 +2,8 @@ import * as client from '../libconfsec/client';
 import { OpenAI } from '../openai';
 import { MockLibconfsec } from '../libconfsec/__tests__/utils/mocks';
 
+const API_URL = 'https://api.openpcc-example.com';
+
 jest.mock('../libconfsec/client');
 
 describe('OpenAI Initialization', () => {
@@ -18,11 +20,12 @@ describe('OpenAI Initialization', () => {
     const apiKey = 'test';
     new OpenAI({
       apiKey,
-      confsecConfig: { libconfsec: lc },
+      confsecConfig: { apiUrl: API_URL, libconfsec: lc },
     });
 
     expect(MockConfsecClient).toHaveBeenCalledWith({
       apiKey,
+      apiUrl: API_URL,
       libconfsec: lc,
     });
   });
@@ -31,11 +34,12 @@ describe('OpenAI Initialization', () => {
     const apiKey = 'test';
     process.env.CONFSEC_API_KEY = apiKey;
     new OpenAI({
-      confsecConfig: { libconfsec: lc },
+      confsecConfig: { apiUrl: API_URL, libconfsec: lc },
     });
 
     expect(MockConfsecClient).toHaveBeenCalledWith({
       apiKey,
+      apiUrl: API_URL,
       libconfsec: lc,
     });
   });
@@ -43,7 +47,7 @@ describe('OpenAI Initialization', () => {
   test('missing API key throws error', () => {
     expect(() => {
       new OpenAI({
-        confsecConfig: { libconfsec: lc },
+        confsecConfig: { apiUrl: API_URL, libconfsec: lc },
       });
     }).toThrow('No API key provided');
   });
@@ -53,11 +57,12 @@ describe('OpenAI Initialization', () => {
     process.env.CONFSEC_API_KEY = 'other';
     new OpenAI({
       apiKey,
-      confsecConfig: { libconfsec: lc },
+      confsecConfig: { apiUrl: API_URL, libconfsec: lc },
     });
 
     expect(MockConfsecClient).toHaveBeenCalledWith({
       apiKey,
+      apiUrl: API_URL,
       libconfsec: lc,
     });
   });
@@ -75,7 +80,7 @@ describe('Resource Management', () => {
   test('OpenAI.close() closes the confsec client', () => {
     const openaiClient = new OpenAI({
       apiKey: 'test',
-      confsecConfig: { libconfsec: lc },
+      confsecConfig: { apiUrl: API_URL, libconfsec: lc },
     });
     openaiClient.close();
     //eslint-disable-next-line @typescript-eslint/unbound-method

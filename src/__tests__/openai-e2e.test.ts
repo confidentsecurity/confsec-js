@@ -1,6 +1,14 @@
 import { OpenAI } from '../openai';
 
-const MODEL = 'llama3.2:1b';
+const MODEL = 'gpt-oss:20b';
+
+const CONFSEC_CONFIG = {
+  apiUrl: 'https://app.confident.security',
+  oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+  oidcSubjectRegex:
+    '^https://github.com/confidentsecurity/T/.github/workflows.*',
+  defaultNodeTags: [`model=${MODEL}`],
+};
 
 function getApiKey() {
   const apiKey = process.env.CONFSEC_API_KEY;
@@ -16,9 +24,7 @@ describe('OpenAI wrapper e2e', () => {
   beforeAll(() => {
     openAI = new OpenAI({
       apiKey: getApiKey(),
-      confsecConfig: {
-        defaultNodeTags: [`model=${MODEL}`],
-      },
+      confsecConfig: CONFSEC_CONFIG,
     });
   });
 
@@ -43,17 +49,15 @@ describe('OpenAI wrapper e2e', () => {
       stream: true,
     });
 
-    let numEvents = 0;
+    const chunks: string[] = [];
     for await (const event of stream) {
-      // Each event should have nonempty content
-      expect(event.choices.length).toBeGreaterThan(0);
+      if (event.choices.length === 0) continue;
       if (event.choices[0].finish_reason == null) {
-        expect(event.choices[0].text).toBeTruthy();
-        numEvents++;
+        chunks.push(event.choices[0].text);
       }
     }
-    // Should have received at least one event
-    expect(numEvents).toBeGreaterThan(0);
+    // Should have received a response in chunks
+    expect(chunks.length).toBeGreaterThan(0);
   });
 
   test('chat non-streaming', async () => {
@@ -73,16 +77,14 @@ describe('OpenAI wrapper e2e', () => {
       stream: true,
     });
 
-    let numEvents = 0;
+    const chunks: string[] = [];
     for await (const event of stream) {
-      // Each event should have nonempty content
-      expect(event.choices.length).toBeGreaterThan(0);
+      if (event.choices.length === 0) continue;
       if (event.choices[0].finish_reason == null) {
-        expect(event.choices[0].delta.content).toBeTruthy();
-        numEvents++;
+        chunks.push(event.choices[0].delta.content);
       }
     }
-    // Should have received at least one event
-    expect(numEvents).toBeGreaterThan(0);
+    // Should have received a response in chunks
+    expect(chunks.length).toBeGreaterThan(0);
   });
 });

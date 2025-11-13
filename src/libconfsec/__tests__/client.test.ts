@@ -1,5 +1,8 @@
 import { ConfsecClient } from '../client';
+import { IdentityPolicySource } from '../types';
 import { MockLibconfsec } from './utils/mocks';
+
+const API_URL = 'https://api.openpcc-example.com';
 
 describe('ConfsecClient initialization', () => {
   test('passes params to confsecClientCreate', () => {
@@ -10,6 +13,7 @@ describe('ConfsecClient initialization', () => {
     const defaultNodeTags = ['tag1', 'tag2'];
     const env = 'test';
     new ConfsecClient({
+      apiUrl: API_URL,
       apiKey,
       concurrentRequestsTarget,
       maxCandidateNodes,
@@ -18,7 +22,13 @@ describe('ConfsecClient initialization', () => {
       libconfsec: mockLibconfsec,
     });
     expect(mockLibconfsec.confsecClientCreate).toHaveBeenCalledWith(
+      API_URL,
       'my-api-key',
+      IdentityPolicySource.CONFIGURED,
+      '',
+      '',
+      '',
+      '',
       concurrentRequestsTarget,
       maxCandidateNodes,
       defaultNodeTags,
@@ -29,11 +39,18 @@ describe('ConfsecClient initialization', () => {
   test('default params', () => {
     const mockLibconfsec = new MockLibconfsec();
     new ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'my-api-key',
       libconfsec: mockLibconfsec,
     });
     expect(mockLibconfsec.confsecClientCreate).toHaveBeenCalledWith(
+      API_URL,
       'my-api-key',
+      IdentityPolicySource.CONFIGURED,
+      '',
+      '',
+      '',
+      '',
       10,
       5,
       [],
@@ -53,6 +70,7 @@ describe('Wallet status', () => {
       })
     );
     const client = new ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'my-api-key',
       libconfsec: mockLibconfsec,
     });
@@ -71,6 +89,7 @@ describe('Resource Management', () => {
   test('close calls confsecClientDestroy', () => {
     const mockLibconfsec = new MockLibconfsec();
     const client = new ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'my-api-key',
       libconfsec: mockLibconfsec,
     });
@@ -83,6 +102,7 @@ describe('Resource Management', () => {
   test('multiple close calls are safe', () => {
     const mockLibconfsec = new MockLibconfsec();
     const client = new ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'my-api-key',
       libconfsec: mockLibconfsec,
     });

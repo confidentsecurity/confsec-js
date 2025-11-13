@@ -1,6 +1,8 @@
 import { ConfsecClient } from '../client';
 import { MockLibconfsec } from './utils/mocks';
 
+const API_URL = 'https://api.openpcc-example.com';
+
 describe('ConfsecResponse', () => {
   let lc: MockLibconfsec;
   let client: ConfsecClient;
@@ -8,6 +10,7 @@ describe('ConfsecResponse', () => {
   beforeEach(() => {
     lc = new MockLibconfsec();
     client = new ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'test',
       libconfsec: lc,
     });
@@ -82,6 +85,7 @@ describe('ConfsecResponseStream', () => {
   beforeEach(() => {
     lc = new MockLibconfsec();
     client = new ConfsecClient({
+      apiUrl: API_URL,
       apiKey: 'test',
       libconfsec: lc,
     });
