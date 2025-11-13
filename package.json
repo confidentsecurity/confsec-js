@@ -1,6 +1,6 @@
 {
   "name": "@confidentsecurity/confsec",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "JavaScript/TypeScript SDK for CONFSEC - secure and anonymous AI inference",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
