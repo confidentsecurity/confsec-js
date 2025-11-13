@@ -82,5 +82,5 @@
   "engines": {
     "node": ">=20"
   },
-  "libconfsecVersion": "0.1.1"
+  "libconfsecVersion": "0.1.5"
 }

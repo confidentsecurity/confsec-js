@@ -1,3 +1,3 @@
-export type { ILibconfsec } from './types';
+export type { ILibconfsec, IdentityPolicySource } from './types';
 export * from './client';
 export * from './response';

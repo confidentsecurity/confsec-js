@@ -1,9 +1,20 @@
 // Type definitions for the native libconfsec module
 
+export const enum IdentityPolicySource {
+  CONFIGURED = 0,
+  UNSAFE_REMOTE = 1,
+}
+
 export interface ILibconfsec {
   /**
    * Create a new CONFSEC client
+   * @param apiUrl - The URL for the auth API
    * @param apiKey - The API key for authentication
+   * @param identityPolicySource - Source of identity policy (CONFIGURED or UNSAFE_REMOTE)
+   * @param oidcIssuer - OIDC issuer string
+   * @param oidcIssuerRegex - Regex for matching OIDC issuer
+   * @param oidcSubject - OIDC subject string
+   * @param oidcSubjectRegex - Regex for matching OIDC subject
    * @param concurrentRequestsTarget - Target number of concurrent requests
    * @param maxCandidateNodes - Maximum number of candidate nodes to consider
    * @param defaultNodeTags - Array of default node tags
@@ -11,7 +22,13 @@ export interface ILibconfsec {
    * @returns Handle to the created client
    */
   confsecClientCreate(
+    apiUrl: string,
     apiKey: string,
+    identityPolicySource: IdentityPolicySource,
+    oidcIssuer: string,
+    oidcIssuerRegex: string,
+    oidcSubject: string,
+    oidcSubjectRegex: string,
     concurrentRequestsTarget: number,
     maxCandidateNodes: number,
     defaultNodeTags: string[],

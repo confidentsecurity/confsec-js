@@ -10,7 +10,7 @@ type ConfsecConfig = Omit<ConfsecClientConfig, 'apiKey'>;
 
 export interface ClientOptions {
   apiKey?: string;
-  confsecConfig?: ConfsecConfig;
+  confsecConfig: ConfsecConfig;
 }
 
 export class OpenAI extends Closeable {

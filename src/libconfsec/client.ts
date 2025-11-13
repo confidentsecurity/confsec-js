@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 import { Fetch } from 'openai/core';
-import { ILibconfsec } from './types';
+import { ILibconfsec, IdentityPolicySource } from './types';
 import { Closeable } from '../closeable';
 import { ConfsecResponse } from './response';
 
@@ -30,8 +30,20 @@ function getLibConfsec(): ILibconfsec {
  * Configuration options for creating a CONFSEC client
  */
 export interface ConfsecClientConfig {
+  /** URL for auth API */
+  apiUrl: string;
   /** API key for authentication */
   apiKey: string;
+  /** Source for identity policy (default: CONFIGURED) */
+  identityPolicySource?: IdentityPolicySource;
+  /** OIDC issuer to use for transparency validation */
+  oidcIssuer?: string;
+  /** Regex for OIDC issuer */
+  oidcIssuerRegex?: string;
+  /** OIDC subject to use for transparency validation */
+  oidcSubject?: string;
+  /** Regex for OIDC subject */
+  oidcSubjectRegex?: string;
   /** Target number of concurrent requests (default: 10) */
   concurrentRequestsTarget?: number;
   /** Maximum number of candidate nodes to consider (default: 5) */
@@ -61,18 +73,30 @@ export class ConfsecClient extends Closeable {
   private libconfsec: ILibconfsec;
 
   constructor({
+    apiUrl,
     apiKey,
+    identityPolicySource = IdentityPolicySource.CONFIGURED,
+    oidcIssuer = '',
+    oidcIssuerRegex = '',
+    oidcSubject = '',
+    oidcSubjectRegex = '',
     concurrentRequestsTarget = 10,
     maxCandidateNodes = 5,
     defaultNodeTags = [],
-    env = undefined,
+    env,
     libconfsec = undefined,
   }: ConfsecClientConfig) {
     super();
     this.libconfsec = libconfsec || getLibConfsec();
 
     this._handle = this.libconfsec.confsecClientCreate(
+      apiUrl,
       apiKey,
+      identityPolicySource,
+      oidcIssuer,
+      oidcIssuerRegex,
+      oidcSubject,
+      oidcSubjectRegex,
       concurrentRequestsTarget,
       maxCandidateNodes,
       defaultNodeTags,

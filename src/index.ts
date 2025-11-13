@@ -6,6 +6,7 @@ export {
 
 export type {
   ConfsecClientConfig,
+  IdentityPolicySource,
   ResponseMetadata,
   WalletStatus,
 } from './libconfsec';

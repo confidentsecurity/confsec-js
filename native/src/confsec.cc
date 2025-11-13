@@ -43,48 +43,84 @@ Napi::Value ConfsecClientCreate(const Napi::CallbackInfo& info) {
     INIT_ERROR;
 
     Napi::Env env = info.Env();
-    if (info.Length() < 5) {
+    if (info.Length() < 11) {
         Napi::TypeError::New(env, "Expected 5 arguments").ThrowAsJavaScriptException();
         return env.Undefined();
     }
 
     if (!info[0].IsString()) {
+        Napi::TypeError::New(env, "API URL must be a string").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    if (!info[1].IsString()) {
         Napi::TypeError::New(env, "API key must be a string").ThrowAsJavaScriptException();
         return env.Undefined();
     }
-    if (!info[1].IsNumber()) {
+    if (!info[2].IsNumber()) {
+        Napi::TypeError::New(env, "Identity policy source must be a number").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    if (!info[3].IsString()) {
+        Napi::TypeError::New(env, "OIDC issuer must be a string").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    if (!info[4].IsString()) {
+        Napi::TypeError::New(env, "OIDC issuer regex must be a string").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    if (!info[5].IsString()) {
+        Napi::TypeError::New(env, "OIDC subject must be a string").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    if (!info[6].IsString()) {
+        Napi::TypeError::New(env, "OIDC subject regex must be a string").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    if (!info[7].IsNumber()) {
         Napi::TypeError::New(env, "Concurrent requests target must be a number").ThrowAsJavaScriptException();
         return env.Undefined();
     }
-    if (!info[2].IsNumber()) {
+    if (!info[8].IsNumber()) {
         Napi::TypeError::New(env, "Max candidate nodes must be a number").ThrowAsJavaScriptException();
         return env.Undefined();
     }
-    if (!info[3].IsArray()) {
+    if (!info[9].IsArray()) {
         Napi::TypeError::New(env, "Default node tags must be an array").ThrowAsJavaScriptException();
         return env.Undefined();
     }
-    if (!info[4].IsString() && !info[4].IsNull()) {
+    if (!info[10].IsString() && !info[4].IsNull()) {
         Napi::TypeError::New(env, "Environment must be a string or null").ThrowAsJavaScriptException();
         return env.Undefined();
     }
 
-    string apiKey = info[0].As<Napi::String>().Utf8Value();
-    int concurrentRequestsTarget = info[1].As<Napi::Number>().Int32Value();
-    int maxCandidateNodes = info[2].As<Napi::Number>().Int32Value();
-    Napi::Array defaultNodeTagsArray = info[3].As<Napi::Array>();
+    string apiUrl = info[0].As<Napi::String>().Utf8Value();
+    string apiKey = info[1].As<Napi::String>().Utf8Value();
+    int identityPolicySource = info[2].As<Napi::Number>().Int32Value();
+    string oidcIssuer = info[3].As<Napi::String>().Utf8Value();
+    string oidcIssuerRegex = info[4].As<Napi::String>().Utf8Value();
+    string oidcSubject = info[5].As<Napi::String>().Utf8Value();
+    string oidcSubjectRegex = info[6].As<Napi::String>().Utf8Value();
+    int concurrentRequestsTarget = info[7].As<Napi::Number>().Int32Value();
+    int maxCandidateNodes = info[8].As<Napi::Number>().Int32Value();
+    Napi::Array defaultNodeTagsArray = info[9].As<Napi::Array>();
     
     vector<char*> defaultNodeTags = JSArrayToCStringArray(defaultNodeTagsArray);
     
     char* env_param = nullptr;
-    if (info[4].IsString()) {
-        string envStr = info[4].As<Napi::String>().Utf8Value();
+    if (info[10].IsString()) {
+        string envStr = info[10].As<Napi::String>().Utf8Value();
         env_param = new char[envStr.length() + 1];
         strcpy(env_param, envStr.c_str());
     }
 
     uintptr_t handle = Confsec_ClientCreate(
+        const_cast<char*>(apiUrl.c_str()),
         const_cast<char*>(apiKey.c_str()),
+        identityPolicySource,
+        const_cast<char*>(oidcIssuer.c_str()),
+        const_cast<char*>(oidcIssuerRegex.c_str()),
+        const_cast<char*>(oidcSubject.c_str()),
+        const_cast<char*>(oidcSubjectRegex.c_str()),
         concurrentRequestsTarget,
         maxCandidateNodes,
         defaultNodeTags.data(),
