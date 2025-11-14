@@ -23,7 +23,14 @@ Use our OpenAI wrapper as a drop-in replacement for existing OpenAI clients:
 ```javascript
 // Use OpenAI wrapper
 import { OpenAI } from '@confidentsecurity/confsec';
-const client = new OpenAI();
+const client = new OpenAI({
+  confsecConfig: {
+    apiUrl: 'https://app.confident.security',
+    oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+    oidcSubjectRegex:
+      '^https://github.com/confidentsecurity/T/.github/workflows.*',
+  },
+});
 ```
 
 Or, for lower-level access, use the CONFSEC-enabled `fetch` implementation directly:
@@ -32,7 +39,13 @@ Or, for lower-level access, use the CONFSEC-enabled `fetch` implementation direc
 // Use fetch implementation
 import { ConfsecClient } from '@confidentsecurity/confsec';
 
-const client = new ConfsecClient({ apiKey: process.env.CONFSEC_API_KEY });
+const client = new ConfsecClient({
+  apiKey: process.env.CONFSEC_API_KEY,
+  apiUrl: 'https://app.confident.security',
+  oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+  oidcSubjectRegex:
+    '^https://github.com/confidentsecurity/T/.github/workflows.*',
+});
 const confsecFetch = client.getConfsecFetch();
 // Use confsecFetch for requests...
 client.close();
@@ -98,7 +111,14 @@ Currently, the following subset of APIs are supported:
 ```javascript
 import { OpenAI } from '@confidentsecurity/confsec';
 
-const client = new OpenAI();
+const client = new OpenAI({
+  confsecConfig: {
+    apiUrl: 'https://app.confident.security',
+    oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+    oidcSubjectRegex:
+      '^https://github.com/confidentsecurity/T/.github/workflows.*',
+  },
+});
 
 try {
   const stream = await client.chat.completions.create({
@@ -137,7 +157,13 @@ result in credits being lost.
 ```javascript
 import { ConfsecClient } from '@confidentsecurity/confsec';
 
-const client = new ConfsecClient({ apiKey: process.env.CONFSEC_API_KEY });
+const client = new ConfsecClient({
+  apiKey: process.env.CONFSEC_API_KEY,
+  apiUrl: 'https://app.confident.security',
+  oidcIssuerRegex: 'https://token.actions.githubusercontent.com',
+  oidcSubjectRegex:
+    '^https://github.com/confidentsecurity/T/.github/workflows.*',
+});
 
 try {
   const confsecFetch = client.getConfsecFetch();
