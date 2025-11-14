@@ -1,4 +1,6 @@
-# CONFSEC JavaScript/TypeScript SDK
+<img width="200" height="auto" alt="Logo - Dark" src="https://github.com/user-attachments/assets/7b520fec-427e-4613-b173-abae8c4cd4c2" />
+
+# JavaScript/TypeScript SDK
 
 ## Overview
 
@@ -42,6 +44,26 @@ We aim to make the SDK as config-free as possible. However, there are some
 parameters you can optionally configure to control how the client interacts
 with the CONFSEC backend:
 
+- `apiUrl (string)`: The URL for the service implementing the OpenPCC auth API.
+- `identityPolicySource (number)`: Accepts values from the `IdentityPolicySource`
+  enum. Controls the source of the identity policy that the client uses to
+  validate the signing identity of artifacts in the OpenPCC transparency log. By
+  default `IdentityPolicySource.CONFIGURED` is used, which requires the caller
+  to configure at least one of `oidcIssuer` or `oidcIssuerRegex`, and at least
+  one of `oidcSubject` or `oidcSubjectRegex`. Alternatively, the caller could set
+  this as `IdentityPolicySource.UNSAFE_REMOTE`, which allows the client to
+  receive and trust the identity policy from the auth server. This is unsafe and
+  should only be used in development environments.
+- `oidcIssuer (string)`: The OIDC issuer to trust for OpenPCC transparency log
+  artifacts.
+- `oidcIssuerRegex (string)`: A regular expression matching the OIDC issuers to
+  trust for OpenPCC transparency log artifacts. Can be used in place of
+  `oidcIssuer` to trust multiple issuers.
+- `oidcSubject (string)`: The OIDC subject to trust for OpenPCC transparency log
+  artifacts.
+- `oidcSubjectRegex (string)`: A regular expression matching the OIDC subjects to
+  trust for OpenPCC transparency log artifacts. Can be used in place of
+  `oidcSubject` to trust multiple subjects.
 - `concurrentRequestsTarget (number)`: Allows the client to specify the desired
   request parallelism. This primarily impacts the number of credits that the
   client will maintain cached and available to use immediately. Higher values
